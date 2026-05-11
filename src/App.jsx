@@ -1,122 +1,52 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+// ── App.jsx ─────────────────────────────────────────────────────────────────
+// Root component. Initialises all hooks and renders the full OS.
 
-function App() {
-  const [count, setCount] = useState(0)
+import { useEffect } from 'react'
+import useOSStore            from './store/useOSStore.js'
+import useVoiceRecognition   from './hooks/useVoiceRecognition.js'
+import useMetrics            from './hooks/useMetrics.js'
+import useKeyboardShortcuts  from './hooks/useKeyboardShortcuts.js'
+
+import BootScreen   from './components/OS/BootScreen.jsx'
+import OSShell      from './components/OS/OSShell.jsx'
+import CustomCursor from './components/FX/CustomCursor.jsx'
+import ParticleCanvas from './components/FX/ParticleCanvas.jsx'
+import ThreeScene   from './components/FX/ThreeScene.jsx'
+
+export default function App() {
+  const { booted, pushNotif, settings } = useOSStore()
+
+  // ── Core hooks ────────────────────────────────────────────────────────
+  const { toggleMic, runCommand } = useVoiceRecognition()
+  useMetrics()
+  useKeyboardShortcuts(toggleMic)
+
+  // ── Startup notifications ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!booted) return
+    const t1 = setTimeout(() => pushNotif('NOVA OS', 'System initialized. Say "Hey Nova" or click the mic.', 4000), 400)
+    const t2 = setTimeout(() => pushNotif('Voice AI', 'Try: "open YouTube" or "search React hooks"', 5500), 2000)
+    return () => { clearTimeout(t1); clearTimeout(t2) }
+  }, [booted, pushNotif])
 
   return (
     <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      {/* ── Boot overlay ── */}
+      <BootScreen />
 
-      <div className="ticks"></div>
+      {/* ── Background FX (behind everything) ── */}
+      {settings.threeEnabled    && <ThreeScene />}
+      {settings.particlesEnabled && <ParticleCanvas />}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      {/* ── Static overlays ── */}
+      <div className="scanlines"   aria-hidden="true" />
+      <div className="grid-overlay" aria-hidden="true" />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
+      {/* ── Custom cursor ── */}
+      <CustomCursor />
+
+      {/* ── OS UI (only rendered after boot) ── */}
+      {booted && <OSShell toggleMic={toggleMic} runCommand={runCommand} />}
     </>
   )
 }
-
-export default App
